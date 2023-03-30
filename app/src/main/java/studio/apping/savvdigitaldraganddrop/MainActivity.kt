@@ -41,15 +41,123 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     LongPressDraggable(modifier = Modifier.fillMaxSize()) {
-        val itemNumbers = remember { mutableStateOf(0) }
-        Column {
-            DropOffArea(itemNumbers)
-            Spacer(modifier = Modifier.weight(1f))
-            ControlButtons(itemNumbers)
-            DragExampleItem()
+        val itemMatrix: MutableState<List<List<String>>> = remember { mutableStateOf(
+            listOf(
+                listOf("a", "b"),
+                listOf("c", "d"),
+                listOf("f"),
+                listOf("g"),
+//                listOf("i", "j")
+            )) }
+        val newRow: (Int, String) -> Unit = { atIndex: Int, newElement: String ->
+            val matrix = mutableListOf<List<String>>()
+            itemMatrix.value.forEach {
+                matrix.add(it)
+            }
+            matrix.add(atIndex, listOf(newElement))
+            itemMatrix.value = matrix
+        }
+
+        val newColumn: (Int, String, Boolean) -> Unit = { atIndex: Int, newElement: String, onLeft: Boolean ->
+            val existingElement = itemMatrix.value[atIndex].first()
+            val updatedRow = if (onLeft) listOf(newElement, existingElement) else listOf(existingElement, newElement)
+            val matrix = mutableListOf<List<String>>()
+            itemMatrix.value.forEach {
+                matrix.add(it)
+            }
+            matrix[atIndex] = updatedRow
+            itemMatrix.value = matrix
+        }
+
+//        DragLayout(itemMatrix)
+        DropLayout(itemMatrix,
+            { index, element ->
+                newRow(index, element)
+            },
+            { index, element, leftOrRight ->
+                newColumn(index,element, leftOrRight)
+        })
+    }
+}
+
+// TODO Drag layout, it can be one row long or half. Use same logic as drop to create rows,
+//  but there is no small one in between. Drop update the matrix, drag is a copy of data,
+//  it need a value of the current element, the layout also resizable like the drop layout.
+
+@Composable
+fun DropLayout(
+    dropMatrix: MutableState<List<List<String>>>,
+    createNewRowAt: (Int, String) -> Unit,
+    createNewColumnAt: (Int, String, Boolean) -> Unit
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(2.dp)) {
+
+        var matrixIndex = 0
+        DropToCreateNewRow(dropMatrix, matrixIndex, createNewRowAt)
+        for (i in 1..dropMatrix.value.size) {
+            matrixIndex += 1
+            DropToInsertInRow(dropMatrix, matrixIndex, createNewColumnAt)
+            matrixIndex += 1
+            DropToCreateNewRow(dropMatrix, matrixIndex, createNewRowAt)
         }
     }
 }
+
+@Composable
+fun DropToInsertInRow(dropMatrix: MutableState<List<List<String>>>, matrixIndex: Int,
+                      createNewRowAt: (Int, String, Boolean) -> Unit) {
+    val modifier = Modifier.height(70.dp)
+    val currentRow = dropMatrix.value[matrixIndex / 2]
+    val currentRowSize = currentRow.size
+    if (currentRowSize < 2){
+        Row { //TODO disable drop if this row has two columns already.
+            DropBox(modifier = modifier.weight(1f), temMatrixIndex = matrixIndex) { newColumnValue ->
+                val updatedAtIndex = matrixIndex / 2
+                createNewRowAt(updatedAtIndex, newColumnValue, false)
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            DropBox(modifier = modifier.weight(1f), temMatrixIndex = matrixIndex) { newColumnValue ->
+                val updatedAtIndex = matrixIndex / 2
+                createNewRowAt(updatedAtIndex, newColumnValue, true)
+            }
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+                .background(Color.White, RoundedCornerShape(16.dp)),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text =  "Full",
+                fontSize = 18.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun DropToCreateNewRow(
+    dropMatrix: MutableState<List<List<String>>>,
+    matrixIndex: Int,
+    createNewRowAt: (Int, String) -> Unit
+) {
+    val modifier = Modifier
+        .fillMaxWidth()
+        .height(35.dp)
+    DropBox(modifier = modifier, temMatrixIndex = matrixIndex) { newSingleElement ->
+        val elementIndex = matrixIndex / 2
+        createNewRowAt(elementIndex, newSingleElement)
+    }
+}
+
 
 @Composable
 fun DragExampleItem() {
@@ -71,48 +179,10 @@ fun DragExampleItem() {
 }
 
 @Composable
-fun DropOffArea(itemNumbers: MutableState<Int>) {
-    Column() {
-        for (i in 1..itemNumbers.value){
-            DropRow()
-        }
-    }
-}
-
-@Composable
-fun DropRow() {
-    val isDual = remember { mutableStateOf(false) }
-    Row {
-        val dropBoxModifier = Modifier
-            .weight(1f)
-            .height(60.dp)
-            .padding(4.dp)
-
-        Button(onClick = {
-                val toggleValue = !isDual.value
-                isDual.value = toggleValue
-        }) {
-            Text(text = if (isDual.value) "Mono" else "Dual")
-        }
-        if (isDual.value) {
-            Row {
-               DropBox(dropBoxModifier)
-               DropBox(dropBoxModifier)
-            }
-        } else {
-            DropBox(dropBoxModifier)
-        }
-    }
-}
-
-@Composable
-fun DropBox(modifier: Modifier) {
+fun DropBox(modifier: Modifier, temMatrixIndex: Int, newSingleElement: (String) -> Unit) {
     Box(modifier) {
-//        Text(text = "Drop Box", modifier = Modifier.background(Color.DarkGray))
-        DropTarget<Int>(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp)
+        DropTarget<String>(
+            modifier = modifier
         ) { isInBound, data ->
             val bgColor = if (isInBound) {
                 Color.Red
@@ -123,6 +193,7 @@ fun DropBox(modifier: Modifier) {
             data?.let {
                 if (isInBound) {
 //                    foodItems[foodItem.id] = foodItem
+                    newSingleElement(it)
                 }
             }
 
@@ -138,28 +209,12 @@ fun DropBox(modifier: Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text =  "Drop Here",
+                    text =  "$temMatrixIndex Drop Here",
                     fontSize = 18.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun ControlButtons(itemNumbers: MutableState<Int>) {
-    Row(Modifier.fillMaxWidth()) {
-        Button(onClick = { if (itemNumbers.value > 0) {
-            itemNumbers.value -= 1
-        } }) {
-            Text(text = "1 Less Row")
-        }
-        Button(onClick = { if (itemNumbers.value < 6) {
-            itemNumbers.value += 1
-        } }) {
-            Text(text = "1 More Row")
         }
     }
 }
