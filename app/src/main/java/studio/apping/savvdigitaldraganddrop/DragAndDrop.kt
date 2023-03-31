@@ -66,7 +66,7 @@ fun <T> DragTarget(
         .onGloballyPositioned {
             currentPosition = it.localToWindow(Offset.Zero)
         }
-        .pointerInput(Unit) {
+        .pointerInput(dataToDrop) {
             detectDragGesturesAfterLongPress(onDragStart = {
                 currentState.dataToDrop = dataToDrop
                 currentState.isDragging = true
@@ -78,8 +78,10 @@ fun <T> DragTarget(
             }, onDragEnd = {
                 currentState.isDragging = false
                 currentState.dragOffset = Offset.Zero
+                currentState.dragPosition = Offset.Zero
             }, onDragCancel = {
                 currentState.dragOffset = Offset.Zero
+                currentState.dragPosition = Offset.Zero
                 currentState.isDragging = false
             })
         }) {
