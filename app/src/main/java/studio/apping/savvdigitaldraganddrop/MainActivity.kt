@@ -64,7 +64,10 @@ fun MainScreen() {
             }
 
             if (to.third) {
-                matrix.addRow(to.first, element)
+                if (from.first < to.first && matrix.size < itemMatrix.value.size)
+                    matrix.addRow(to.first - 1, element)
+                else
+                    matrix.addRow(to.first, element)
             } else {
                 matrix.addColumn(to.first, to.second, element)
             }
