@@ -3,13 +3,12 @@ package studio.apping.savvdigitaldraganddrop
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -172,6 +171,7 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
             if (isInBound) {
                 val from = it
                 // But can use matrix index to validate the rules.
+                // TODO ideally, use rules to decide whether the drop is indicated or not.
                 val ruleNotPassed = if (from.third) { // Rules that decide where the dragged item can be dropped and cannot dropped.
                     (to.first == from.first * 2 ||
                     to.first == from.first * 2 + 1 ||
@@ -186,7 +186,7 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
                 }
             }
         }
-
+        // TODO use animateDpAsState to animate the Rows.
         Column(
             modifier = modifier
                 .fillMaxWidth()

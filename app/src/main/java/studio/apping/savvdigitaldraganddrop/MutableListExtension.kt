@@ -18,7 +18,10 @@ fun <T> MutableList<List<T>>.removeColumn(fromRow: Int, fromColumn: Int) {
 
 fun <T> MutableList<List<T>>.addRow(toRow: Int, element: T) {
     val newRow = listOf(element)
-    this.add(toRow, newRow)
+    if (toRow > this.lastIndex)
+        this.add(newRow)
+    else
+        this.add(toRow, newRow)
 }
 
 fun <T> MutableList<List<T>>.addColumn(toRow: Int, toColumn: Int, element: T) {
