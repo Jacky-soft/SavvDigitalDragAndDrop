@@ -190,21 +190,21 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
         Column(
             modifier = modifier
                 .fillMaxWidth()
-                .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
+//                .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
                 .background(
                     //                Color.White // Be transparent for dev purpose
                     bgColor,
-                    RoundedCornerShape(16.dp)
+//                    RoundedCornerShape(16.dp)
                 ),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text =  "",
-                fontSize = 18.sp,
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
+//            Text(
+//                text =  "",
+//                fontSize = 18.sp,
+//                color = Color.Black,
+//                fontWeight = FontWeight.Bold
+//            )
         }
     }
 }
