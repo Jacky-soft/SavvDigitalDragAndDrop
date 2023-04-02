@@ -6,14 +6,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,16 +44,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     LongPressDraggable(modifier = Modifier.fillMaxSize()) {
-        val itemMatrix: MutableState<List<List<String>>> = remember { mutableStateOf(
+        val itemMatrix: MutableState<List<List<DragAndDropItem>>> = remember { mutableStateOf(
             listOf(
-                listOf("a","b"),
-                listOf("c","d"),
-                listOf("e","f"),
+                listOf(DragAndDropItem(Icons.Filled.AccountCircle, Color(0xff57CC99),"Account"),DragAndDropItem(Icons.Filled.Email, Color(0xffD56F3E),"Email")),
+                listOf(DragAndDropItem(Icons.Filled.Share, Color(0xff89909f),"Share"),DragAndDropItem(Icons.Filled.Check, Color(0xff2A7F62),"Check")),
+                listOf(DragAndDropItem(Icons.Filled.Build, Color(0xffC3ACCE),"Build"),DragAndDropItem(Icons.Filled.Edit, Color(0xff36213E),"Edit")),
             )) }
 
         //TODO make the drag layout and drop layout less gap between the rows.
+        DragLayout(itemMatrix)
         DropLayout(itemMatrix) { from, to ->
-            val matrix = mutableListOf<List<String>>()
+            val matrix = mutableListOf<List<DragAndDropItem>>()
             matrix.addAll(itemMatrix.value)
             val element = matrix.getElement(from.first, from.second)
 
@@ -67,13 +72,12 @@ fun MainScreen() {
 
             itemMatrix.value = matrix
         }
-        DragLayout(itemMatrix)
     }
 }
 
 @Composable
 fun DragLayout(
-    dragMatrix: MutableState<List<List<String>>>
+    dragMatrix: MutableState<List<List<DragAndDropItem>>>
 ) {
     Column(
         Modifier
@@ -84,11 +88,17 @@ fun DragLayout(
         for (i in 0..dragMatrix.value.lastIndex) {
             val currentDragRow = dragMatrix.value[i]
             if (currentDragRow.size == 1) {
-                DragBox(Modifier.height(60.dp), Triple(i, 0, true))
+                DragBox(Modifier.height(60.dp), Triple(i, 0, true), currentDragRow[0])
             } else if (currentDragRow.size == 2) {
                 Row {
-                   DragBox(Modifier.weight(1f).height(60.dp), Triple(i,0,false))
-                   DragBox(Modifier.weight(1f).height(60.dp), Triple(i,1,false))
+                   DragBox(
+                       Modifier
+                           .weight(1f)
+                           .height(60.dp), Triple(i,0,false), currentDragRow[0])
+                   DragBox(
+                       Modifier
+                           .weight(1f)
+                           .height(60.dp), Triple(i,1,false), currentDragRow[1])
                 }
             }
             Spacer(modifier = Modifier.height(30.dp))
@@ -98,16 +108,19 @@ fun DragLayout(
 
 @Composable
 fun DropLayout(
-    dropMatrix: MutableState<List<List<String>>>,
+    dropMatrix: MutableState<List<List<DragAndDropItem>>>,
     updateMatrixFunc: (Triple<Int, Int, Boolean>, Triple<Int, Int, Boolean>) -> Unit
 ) {
 
     Column(
-        Modifier.fillMaxSize().padding(2.dp)) {
+        Modifier
+            .fillMaxSize()
+            .padding(2.dp)) {
+        // TODO apply animation to resize the drag Composable.
         var matrixIndex = 0
         DropBox(modifier = Modifier
             .fillMaxWidth()
-            .height(30.dp),  Triple(matrixIndex/2, 0, true)) { from, to -> updateMatrixFunc(from, to)}
+            .height(30.dp),  Triple(matrixIndex, 0, true)) { from, to -> updateMatrixFunc(from, to)}
         for (i in 1..dropMatrix.value.size) {
             matrixIndex += 1
             val currentRow = dropMatrix.value[matrixIndex / 2]
@@ -116,35 +129,35 @@ fun DropLayout(
                 Row {
                     DropBox(modifier = Modifier
                         .height(60.dp)
-                        .weight(1f), Triple(matrixIndex/2, 0, false)) { from, to -> updateMatrixFunc(from, to)}
+                        .weight(1f), Triple(matrixIndex, 0, false)) { from, to -> updateMatrixFunc(from, to)}
                     Spacer(modifier = Modifier.width(4.dp))
                     DropBox(modifier = Modifier
                         .height(60.dp)
-                        .weight(1f), Triple(matrixIndex/2, 1, false)) { from, to -> updateMatrixFunc(from, to)}
+                        .weight(1f), Triple(matrixIndex, 1, false)) { from, to -> updateMatrixFunc(from, to)}
                 }
             } else {
-                ItemArea(modifier = Modifier.height(60.dp), note = "Full $currentRow")
+                Box(modifier = Modifier.height(60.dp).fillMaxWidth())
             }
             matrixIndex += 1
             DropBox(modifier = Modifier
                 .fillMaxWidth()
-                .height(30.dp), Triple(matrixIndex/2, 0, true)) { from, to -> updateMatrixFunc(from, to)
+                .height(30.dp), Triple(matrixIndex, 0, true)) { from, to -> updateMatrixFunc(from, to)
             }
         }
     }
 }
 
 @Composable
-fun DragBox(modifier: Modifier, from: Triple<Int, Int, Boolean>) {
+fun DragBox(modifier: Modifier, from: Triple<Int, Int, Boolean>, item: DragAndDropItem) {
     DragTarget(
         modifier = modifier, dataToDrop = from,
     ) {
-        ItemArea(modifier = modifier, note = from.toString())
+        ItemArea(modifier = modifier, item = item)
     }
 }
 
 @Composable
-fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement: (Triple<Int, Int, Boolean>, Triple<Int, Int, Boolean>) -> Unit) { //TODO temMatrixIndex can be removed when refactor
+fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement: (Triple<Int, Int, Boolean>, Triple<Int, Int, Boolean>) -> Unit) {
     DropTarget<Triple<Int,Int,Boolean>>(
         modifier = modifier
     ) { isInBound, data ->
@@ -158,7 +171,19 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
         data?.let {
             if (isInBound) {
                 val from = it
-                newSingleElement(from, to)
+                // But can use matrix index to validate the rules.
+                val ruleNotPassed = if (from.third) { // Rules that decide where the dragged item can be dropped and cannot dropped.
+                    (to.first == from.first * 2 ||
+                    to.first == from.first * 2 + 1 ||
+                    to.first == from.first * 2 + 2)
+                } else {
+                    (to.first == from.first * 2 + 1)
+                }
+                // TODO need to invalid if the current row has 2 items.
+                if (!ruleNotPassed) {
+                    val toWithActualRowIndex = Triple(to.first/2 , to.second, to.third) // Please ignore IDE warning for to.third.
+                    newSingleElement(from, toWithActualRowIndex)
+                }
             }
         }
 
@@ -175,7 +200,7 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text =  "Drop",
+                text =  "",
                 fontSize = 18.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold
@@ -185,27 +210,33 @@ fun DropBox(modifier: Modifier, to: Triple<Int, Int, Boolean>, newSingleElement:
 }
 
 @Composable
-fun ItemArea(modifier: Modifier, note: String) {
-    Column(
+fun ItemArea(modifier: Modifier, item: DragAndDropItem) {
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .shadow(elevation = 4.dp, shape = RoundedCornerShape(16.dp))
             .background(
-                                Color.White, // Be transparent for dev purpose
+                Color.White, // Be transparent for dev purpose
 //                Color.Transparent,
                 RoundedCornerShape(16.dp)
             ),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
+        Icon(modifier = Modifier
+            .padding(start = 16.dp, end = 8.dp)
+            .size(36.dp), imageVector = item.icon, tint = item.tint, contentDescription = item.note )
         Text(
-            text =  note,
+            text =  item.note,
             fontSize = 18.sp,
-            color = Color.Black,
+            color = item.tint,
             fontWeight = FontWeight.Bold
         )
     }
 }
+
+data class DragAndDropItem(val icon: ImageVector, val tint: Color, val note: String)
+
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
