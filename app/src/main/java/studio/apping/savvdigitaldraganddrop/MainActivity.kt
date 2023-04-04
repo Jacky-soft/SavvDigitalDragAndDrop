@@ -53,23 +53,22 @@ fun MainScreen() {
         //TODO make the drag layout and drop layout less gap between the rows.
         DragLayout(itemMatrix)
         DropLayout(itemMatrix) { from, to ->
+            var _to = to
             val matrix = mutableListOf<List<DragAndDropItem>>()
             matrix.addAll(itemMatrix.value)
             val element = matrix.getElement(from.first, from.second)
 
             if (from.third) {
                 matrix.removeRow(from.first)
+                if (from.first < to.first) _to = Triple(to.first - 1, to.second, to.third)
             } else {
                 matrix.removeColumn(from.first, from.second)
             }
 
-            if (to.third) {
-                if (from.first < to.first && matrix.size < itemMatrix.value.size)
-                    matrix.addRow(to.first - 1, element)
-                else
-                    matrix.addRow(to.first, element)
+            if (_to.third) {
+                matrix.addRow(_to.first, element)
             } else {
-                matrix.addColumn(to.first, to.second, element)
+                matrix.addColumn(_to.first, to.second, element)
             }
 
             itemMatrix.value = matrix
